@@ -1,0 +1,133 @@
+# any sort of collection of Cells, i.e. rows, columns, boxes, diagonals, etc.
+# this is an interface
+
+#=
+
+All CellBags are collections of Cells that hold views of the Matrix representing
+the puzzle.
+
+everything that extends this needs to have these functions
+    - iscorrect()
+    - create_all()
+    - get_cells()
+    - ↔()
+
+Needs to have properites:
+    - id Int
+    - cells Vector{Cell}
+
+TODO Some other CellBags that need to be implemented
+    - mephistofel mumbo jumbo
+=#
+
+abstract type CellBag end
+
+iscorrect(::CellBag) = error("Must implement iscorrect for CellBag")
+create_all(::CellBag) = error("Must implement create_all for CellBag")
+get_cells(::CellBag) = error("Must implement get_cells for CellBag")
+remove_possible_values!(::CellBag) = error("Must implement remove_possible_values! for CellBag")
+# TODO it is possible that several of these functions below are identical
+# for all CellBags.
+Base.iterate(::CellBag) = error("Must implement Base.iterate for CellBag!")
+Base.length(::CellBag) = error("Must implement Base.length for CellBag!")
+Base.size(::CellBag) = error("Must implement Base.size for CellBag!")
+Base.isdone(::CellBag) = error("Must implement Base.isdone for CellBag!")
+# required for findfirst
+Base.pairs(::CellBag) = error("Must implement Base.pairs for CellBag")
+# all CellBags have element type of Cell
+Base.eltype(::CellBag) = Cell
+Base.getindex(::CellBag, ::Int) = error("Must implement Base.getindex for CellBag")
+
+#=
+We need to be able to determine if ↔ is defined for two given CellBag subtypes,
+but we also need to distinguish between these and the fallback error types above.
+Thus, we use traits
+=#
+
+struct HasCompare end
+struct MissingCompare end
+
+↔(::CellBag, ::CellBag, ::MissingCompare) = error("Must implement some sort of comparison operation (↔) for CellBag")
+
+# trait function: returns true is a pair of subtypes claim to support ↔
+# a trait for this CellBag subtype is that ↔ is defined for these combinations
+# override this in subtypes which do support ↔ (see def in Box for details)
+# we use super generic types here as the catch-all
+#compare_trait(::Type{A}, ::Type{B}) where {A, B} = MissingCompare()
+
+# if an invocation of ↔ is not valid, it returns false.
+# when you are defining a possible invocation ↔, use ::HasCompare
+↔(x, y, ::MissingCompare) = false
+
+function filled_cells(C::CellBag)::Vector{Cell}
+    # returns a collection of cells that are filled-in either as clues or by the solver.
+    return filter(c -> c._value > 0, get_cells(C))
+end
+
+function empty_cells(C::CellBag)::Vector{Cell}
+    return filter(c -> c._value == 0, get_cells(C))
+end
+
+function iscompleted(C::CellBag)::Bool
+    return all(map(c -> ! isempty(c), get_cells(C)))
+end
+
+"""
+    set_if_only_one_option_left(cb::CellBag)
+
+If a value can only be in one place in the cellbag, then place it.
+"""
+function set_if_only_one_option_left(cb::CellBag)
+    value_counts = possible_value_counts(cb)
+
+    # place any with value_count of 1
+    values_to_set = [k for (k, v) ∈ value_counts if v == 1]
+    while ! isempty(values_to_set)
+        x = pop!(values_to_set)
+        # find the cell that the value would go into and set it.
+        if (i = findfirst(c -> x ∈ c._possible_values, cb)) === nothing
+            continue
+        end
+        set_value(get_cells(cb)[i], x)
+        value_counts = possible_value_counts(cb)
+    
+        # setting a value may allow for a new value to be set.
+        for (k, v) ∈ value_counts
+            if v == 1 && v ∉ values_to_set
+                push!(values_to_set, k)
+            end
+        end
+    end
+end
+
+"""
+    possible_value_counts(cb::CellBag)::Dict{Int, Int}
+
+"value_counts" of possible_values in Cells within the given CellBag
+"""
+function possible_value_counts(cb::CellBag)::Dict{Int, Int}
+    value_counts = Dict(
+        i => 0 for i in 1:get_cells(cb)[1]._max_possible_value
+    )
+    for c ∈ cb, pv ∈ get_possible_values(c)
+        value_counts[pv] += 1
+    end
+    return value_counts
+end
+
+"""
+    InvalidInputException
+
+For when a puzzle attempts to instantiate and invalid cellbag
+
+NOTE this should not be used for checking for "correctness"
+as iscorrect handles that and is called upon instantiation. This is for
+assumptions such as "dimensions of puzzle must be divisible by 3".
+"""
+struct InvalidInputException <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, e::InvalidInputException) = print(
+    io, "InvalidInputException: ", e.msg
+)
