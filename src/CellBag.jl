@@ -22,10 +22,8 @@ TODO Some other CellBags that need to be implemented
 
 abstract type CellBag end
 
-iscorrect(::CellBag) = error("Must implement iscorrect for CellBag")
 create_all(::CellBag) = error("Must implement create_all for CellBag")
 get_cells(::CellBag) = error("Must implement get_cells for CellBag")
-remove_possible_values!(::CellBag) = error("Must implement remove_possible_values! for CellBag")
 # TODO it is possible that several of these functions below are identical
 # for all CellBags.
 Base.iterate(::CellBag) = error("Must implement Base.iterate for CellBag!")
@@ -52,7 +50,6 @@ struct MissingCompare end
 # trait function: returns true is a pair of subtypes claim to support ↔
 # a trait for this CellBag subtype is that ↔ is defined for these combinations
 # override this in subtypes which do support ↔ (see def in Box for details)
-# we use super generic types here as the catch-all
 #compare_trait(::Type{A}, ::Type{B}) where {A, B} = MissingCompare()
 
 # if an invocation of ↔ is not valid, it returns false.
@@ -113,6 +110,47 @@ function possible_value_counts(cb::CellBag)::Dict{Int, Int}
         value_counts[pv] += 1
     end
     return value_counts
+end
+
+struct ValuesUnique end
+struct ValuesCanRepeat end
+
+remove_possible_values!(::CellBag, ::ValuesCanRepeat) = error("Must implement remove_possible_values! for CellBag")
+
+"""
+remove_possible_values!(c::T<:CellBag)
+
+Using filled cells within the cellbag, removes filled values from possible values of
+empty cells within the cellbag. Assumes that all values within must be unique
+"""
+function remove_possible_values!(c::T) where {T<:CellBag}
+    # if the values must be unique, routes to the abstract type's method
+    # o.w. use a type-specific implementation
+    return remove_possible_values!(c, unique_values_trait(typeof(c)))
+end
+
+function remove_possible_values!(c::T, ::ValuesUnique) where {T<:CellBag}
+    fcs = filled_cells(c)
+    ecs = empty_cells(c)
+
+    while ! isempty(fcs)
+        fc = pop!(fcs)
+        map(ec -> remove_possible_value(ec, fc._value), ecs)
+    end
+end
+
+iscorrect(::CellBag, ::ValuesCanRepeat) = error("Must implement iscorrect for CellBag")
+
+function iscorrect(c::T)::Bool where {T<:CellBag}
+    return iscorrect(c, unique_values_trait(typeof(c)))
+end
+
+function iscorrect(b::T, ::ValuesUnique)::Bool where {T<:CellBag}
+    filled_cell_values = map(c -> c._value, filled_cells(b))
+    if length(filled_cell_values) != length(unique(filled_cell_values))
+        return false
+    end
+    return true
 end
 
 """

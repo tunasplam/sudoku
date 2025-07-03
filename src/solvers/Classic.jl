@@ -15,7 +15,7 @@ struct Classic <: Solver
     # Arguments
     - `in_str::String`: input string representing puzzle to be solved.
 
-    Example `in_str``:
+    Example `in_str`:
 
     102
     300
@@ -64,8 +64,14 @@ end
 Takes a Classic sudoku puzzle and returns a string representing its solution
 """
 function solve(P::Classic)::String
+    #=
+    TODO a "threat level" indicator that starts as low as possible
+    but increments each time the solver gets stuck. higher levels allow
+    for methods that have lower likelihood of giving any new information.
+    throw the exception once the threat level is "maxed out"
+    =#
     # loop until stuck or a mistake is found
-    prev_P = string(P)
+    prev_p = string(P)
 
     # get a list of tuples that define comparable cellbagtypes
 
@@ -78,11 +84,13 @@ function solve(P::Classic)::String
         operate_within_cellbags(cbs)
         iscorrect(P)
 
+        current_p = string(P)
         if iscompleted(P)
-            return string(P)
-        elseif string(P) == prev_P
+            return current_p
+        elseif current_p == prev_p
+            @show "Here"
             throw(StuckPuzzleException(P, "Classic puzzle solver is stuck!"))
         end
-        prev_p = string(P)
+        prev_p = current_p
     end
 end

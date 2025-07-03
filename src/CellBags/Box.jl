@@ -27,29 +27,7 @@ compare_trait(::Type{Box}, ::Type{T}) where {T<:LinearCellBag} = HasCompare()
 compare_trait(::Type{T}, ::Type{Box}) where {T<:LinearCellBag} = HasCompare()
 # ... but not for this one.
 compare_trait(::Type{Box}, ::Type{Box}) = MissingCompare()
-
-"""
-remove_possible_values!(b::Box)
-
-Using filled cells within the cellbag, removes filled values from possible values of
-empty cells within the cellbag.
-"""
-function remove_possible_values!(b::Box)
-    fcs = filled_cells(b)
-    ecs = empty_cells(b)
-
-    while ! isempty(fcs)
-        fc = pop!(fcs)
-        for ec ∈ ecs
-            # if remove_possible_value set a cell
-            if remove_possible_value(ec, fc._value)
-                push!(fcs, ec)
-                # NOTE we do not need to remove ec from ecs
-                # remove_possible_value will skip it bc its filled
-            end
-        end
-    end
-end
+unique_values_trait(::Type{Box{Cell}}) = ValuesUnique()
 
 import Base: ↔
 
@@ -73,14 +51,6 @@ function ↔(b::Box{Cell}, r::LinearCellBag, ::HasCompare)::Tuple{Box{Cell}, Lin
 end
 
 ↔(r::LinearCellBag, b::Box{Cell}, ::HasCompare)::Tuple{LinearCellBag, Box{Cell}} = reverse(↔(b, r, HasCompare()))
-
-function iscorrect(b::Box)::Bool
-    filled_cell_values = map(c -> c._value, filled_cells(b))
-    if length(filled_cell_values) != length(unique(filled_cell_values))
-        return false
-    end
-    return true
-end
 
 function create_all(::Type{Box}, cells::Matrix{Cell})::Vector{Box}
     # dimensions of puzzle must be division by 3. there will always be 9

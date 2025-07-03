@@ -67,9 +67,31 @@ end
 end
 
 @testset "Classic_PE" begin
-    # TODO load up project euler sudoku puzzles
-    # solve them one-by-one
-    # maybe stats on speed?
     # https://projecteuler.net/project/resources/p096_sudoku.txt
+    path = joinpath(@__DIR__, "resources", "pe_classic_sudoku.txt")
+    puzzles = split(read(path, String), '-')
 
+    # TODO getting stuck on puzzle with this as first row:
+    # 100920000
+
+    #=
+        stuck state:
+
+        1  5  0  0  0  4  0  0  0
+        0  2  0  5  0  1  6  0  4
+        0  4  0  0  0  2  0  1  0
+        9  0  0  0  1  7  0  0  0
+        2  1  0  0  0  0  0  3  7
+        0  7  0  8  2  0  9  6  1
+        0  0  2  1  0  0  0  9  0
+        0  0  7  0  0  9  1  4  2
+        0  9  1  2  0  0  0  5  6
+    =#
+    # first string is empty
+    for puzzle_in in puzzles
+        @show puzzle_in
+        p = Classic(String(puzzle_in))
+        solve(p)
+    end
+    @test true
 end

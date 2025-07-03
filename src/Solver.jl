@@ -73,6 +73,10 @@ end
 function operate_within_cellbags(cbs_dict::Dict{Type, Vector{CellBag}})
     for (_, cbs) ∈ cbs_dict, cb ∈ filter(! iscompleted, cbs)
         set_if_only_one_option_left(cb)
+        # TODO if this is a unique enforced cellbag and a pair of numbers
+        # can only be in two cells, then you can clear all over possible_values
+        # in those cells. extensions to 3 + are possible (but the higher ones think about)
+        # but they should only be used if the solver is in danger of getting stuck.
     end
 end
 
