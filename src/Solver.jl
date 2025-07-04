@@ -6,7 +6,6 @@ the modules of all CellBags that are being used by the solver.
 
 Search InvalidInputException to find assumptions that are being made about the
 puzzle that are not outlined explicitly in the ruleset.
-
 =#
 
 abstract type Solver end
@@ -118,3 +117,14 @@ end
 Base.showerror(io::IO, e::StuckPuzzleException) = print(
     io, "StuckPuzzleException", e.msg, string(e.s)
 )
+
+"""
+    Base.hash(s::Solver, h::UInt)::UInt
+
+A hash value that takes into account cell values and possible values.
+This makes sure that solver iterations which only update possible values
+are not mistaken for being stuck.
+"""
+Base.hash(s::Solver, h::UInt)::UInt = sum(map(
+    c -> hash(c.id, h) + hash(c._value) + hash(c._possible_values), get_cells(s)
+))

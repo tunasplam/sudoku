@@ -76,14 +76,12 @@ function solve(P::Classic)::String
     3 -> last resort checks
 
     Threat level resets once a cell is filled.
-    TODO solver does not have any information on filled_cells when considering
-    if it is stuck. we should actually do something like a hash value...
     =#
     threat_level = 1
     max_threat_level = 3
 
     # loop until stuck or a mistake is found
-    prev_p = string(P)
+    prev_p = hash(P)
 
     cbs = get_cellbags(P)
     comparable_cbtypes = determine_comparable_cellbag_pairs(P)
@@ -93,10 +91,10 @@ function solve(P::Classic)::String
         operate_between_cellbags(comparable_cbtypes, cbs)
         operate_within_cellbags(cbs, threat_level)
 
-        current_p = string(P)
+        current_p = hash(P)
         if iscompleted(P)
             check_correctness(P)
-            return current_p
+            return string(P)
         end
 
         if current_p == prev_p
