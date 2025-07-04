@@ -160,38 +160,64 @@ in those cells. extensions to 3 + are possible but should only be checked with h
 NOTE assumes that dimensions of puzzles are divisible by 3
 """
 function update_empty_cells_using_groupings(cb::T, threat_level::Int, ::ValuesUnique) where {T<:CellBag}
-    cs = empty_cells(cb)
-
-    if length(cs) < 2
-        return
+    for (comb, g) in possible_value_groupings(cb, threat_level, ValuesUnique())
+        # remove all values in the target cells that are not in comb
+        for c ∈ g, pv ∈ get_possible_values(c)
+            if pv ∉ comb
+                remove_possible_value(c, pv)
+            end
+        end
     end
+end
 
-    # filter combination by size based on threat level
-    combs_to_check = filter(
-        t -> 1 < length(t) < 3 * threat_level,
-        collect(combinations(get_distinct_possible_values(cs)))
-    )
+update_empty_cells_using_groupings(::T, ::Int, ::ValuesCanRepeat) where {T<:CellBag} = 
+    error("Must implement ValuesCanRepeat case for update_empty_cells_using_groupings for CellBag")
 
-    for comb ∈ combs_to_check
-        #=
-        A combination of length k is a hit if all possible cells
-        for x1 ... x_k are equal.
-        =#
-        # this object is list of sets of cells that each element in comb can reside in
-        sets_target_cells = map(x -> Set(get_cells_with_possible_value(cs, x)), comb)
-        for s ∈ sets_target_cells
-            # if this comb of values can only reside in the same sets of cells, we have a hit
-            if all(c == first(s) for c ∈ s)
-                # remove all values in the target cells that are not in comb
-                for c ∈ s, pv ∈ get_possible_values(c)
-                    if pv ∉ comb
-                        remove_possible_value(c, pv)
-                    end
+"""
+    possible_value_groupings(cb::T, threat_level::Int, ::ValuesUnique)::Channel{Tuple{Vector{Int}, Vector{Cell}}} where {T<:CellBag}
+
+If a grouping of k values can only exist in one of k cells in a cellbag, then those cells form a grouping.
+These groupings are useful for filtering out possible values.
+
+This returns a tuple where the first value is the combination of pvs and the second is a list of cells that comprise the grouping.
+"""
+function possible_value_groupings(cb::T, threat_level::Int, ::ValuesUnique)::Channel{Tuple{Vector{Int}, Vector{Cell}}} where {T<:CellBag}
+    # this is akin to yield in python.
+    # this is eager generation and lazy delivery meaning all groupings are calculated immediately but the iterator
+    # still only provides the results one at a time. If we want to limit how much is pre-calculated, limit the buffer
+    # on Channel. A value of 1 means the generation and delivery are in sync.
+    return Channel{Tuple{Vector{Int}, Vector{Cell}}}() do ch
+        cs = empty_cells(cb)
+
+        if length(cs) < 2
+            return
+        end
+
+        # filter combination by size based on threat level
+        combs_to_check = filter(
+            t -> 1 < length(t) < 3 * threat_level,
+            collect(combinations(get_distinct_possible_values(cs)))
+        )
+
+        for comb ∈ combs_to_check
+            #=
+            A combination of length k is a hit if all possible cells
+            for x1 ... x_k are equal.
+            =#
+            # this object is list of sets of cells that each element in comb can reside in
+            sets_target_cells = map(x -> Set(get_cells_with_possible_value(cs, x)), comb)
+            for s ∈ sets_target_cells
+                # if this comb of values can only reside in the same sets of cells, we have a hit
+                if all(c == first(s) for c ∈ s)
+                    put!(ch, (comb, collect(s)))
                 end
             end
         end
     end
 end
+
+identify_possible_value_groupings(::T, ::Int, ::ValuesCanRepeat) where {T<:CellBag} =
+    error("Must implement ValuesCanRepeat case for identify_possible_value_groupings for CellBag")
 
 iscorrect(::CellBag, ::ValuesCanRepeat) = error("Must implement iscorrect for CellBag")
 

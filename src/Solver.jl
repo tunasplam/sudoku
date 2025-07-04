@@ -64,10 +64,22 @@ function operate_between_cellbags(
 )
     for (t1, t2) ∈ comparable_cbtypes
         for cb1 ∈ cbs[t1], cb2 ∈ cbs[t2]
+            #=
+            TODO a grouping of possible values in one cellbag can affect
+            possible values in another. We need:
+            - a generic function for identifying groupings of cells in cellbags
+                - (test with hooking up to update_empty_cells_using_groupings(::CellBag))
+            - if a grouping exists entirely in the intersection of two cellbags,
+            then all cells in the complement can have the values from the grouping
+            removed from their possible values.
+                - update_empty_cells_using_groupings(::CellBag, ::CellBag)
+            - and honestly, replace ↔ with compare
+            =#
             ↔(cb1, cb2, HasCompare())
         end
     end
 end
+
 
 function operate_within_cellbags(cbs_dict::Dict{Type, Vector{CellBag}}, threat_level::Int)
     for (_, cbs) ∈ cbs_dict, cb ∈ cbs
