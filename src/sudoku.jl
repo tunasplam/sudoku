@@ -2,14 +2,14 @@ module sudoku
 
 include("CellBag.jl")
 export CellBag, filled_cells, empty_cells, iscompleted, InvalidInputException, remove_possible_values!, ↔,
-HasCompare, MissingCompare, compare_trait, set_if_only_one_option_left, ValuesUnique, ValuesCanRepeatm
+HasCompare, MissingCompare, compare_trait, set_if_only_one_option_left, ValuesUnique, ValuesCanRepeat,
 iscorrect
 
 include("Cell.jl")
-export Cell, set_value, remove_possible_values
+export Cell, set_value, remove_possible_values, get_distinct_possible_values, get_cells_with_possible_value
 
 include("Solver.jl")
-export Solver, InvalidPuzzleException, string, iscorrect, get_cellbags, get_cells, StuckPuzzleException,
+export Solver, InvalidPuzzleException, string, check_correctness, get_cellbags, get_cells, StuckPuzzleException,
 determine_comparable_cellbag_pairs, operate_between_cellbags, operate_within_cellbags,
 solve
 

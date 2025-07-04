@@ -17,7 +17,7 @@ mutable struct Row{Cell} <: LinearCellBag
     """
     function Row(id::Int, cells::SubArray)
         r = new{Cell}(id, cells)
-        remove_possible_values!(r)
+        remove_possible_values!(r, 1)
         return r
     end
 
@@ -28,7 +28,7 @@ mutable struct Row{Cell} <: LinearCellBag
     """
     function Row(id::Int, cells::Vector{Cell})
         r = new{Cell}(id, cells)
-        remove_possible_values!(r)
+        remove_possible_values!(r, 1)
         return r
     end
 end

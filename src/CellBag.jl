@@ -20,6 +20,8 @@ TODO Some other CellBags that need to be implemented
     - mephistofel mumbo jumbo
 =#
 
+using Combinatorics
+
 abstract type CellBag end
 
 create_all(::CellBag) = error("Must implement create_all for CellBag")
@@ -115,27 +117,79 @@ end
 struct ValuesUnique end
 struct ValuesCanRepeat end
 
-remove_possible_values!(::CellBag, ::ValuesCanRepeat) = error("Must implement remove_possible_values! for CellBag")
+remove_possible_values!(::CellBag, ::Int, ::ValuesCanRepeat) = error("Must implement remove_possible_values! for CellBag")
 
 """
-remove_possible_values!(c::T<:CellBag)
+    remove_possible_values!(c::T<:CellBag, threat_level::Int) where {T<:CellBag}
 
 Using filled cells within the cellbag, removes filled values from possible values of
-empty cells within the cellbag. Assumes that all values within must be unique
+empty cells within the cellbag. Assumes that all values within must be unique.
+higher `threat_level` can allow for usage of methods that are less likely to yield
+new information. 
 """
-function remove_possible_values!(c::T) where {T<:CellBag}
+function remove_possible_values!(cb::T, threat_level::Int) where {T<:CellBag}
     # if the values must be unique, routes to the abstract type's method
     # o.w. use a type-specific implementation
-    return remove_possible_values!(c, unique_values_trait(typeof(c)))
+    return remove_possible_values!(cb, threat_level, unique_values_trait(typeof(cb)))
 end
 
-function remove_possible_values!(c::T, ::ValuesUnique) where {T<:CellBag}
-    fcs = filled_cells(c)
-    ecs = empty_cells(c)
+function remove_possible_values!(cb::T, threat_level::Int, v::ValuesUnique) where {T<:CellBag}
+    if iscompleted(cb)
+        return
+    end
+    update_empty_cells_using_filled_cells(cb, v)
+    update_empty_cells_using_groupings(cb, threat_level, v)
+end
+
+function update_empty_cells_using_filled_cells(cb::T, ::ValuesUnique) where {T<:CellBag}
+    fcs = filled_cells(cb)
+    ecs = empty_cells(cb)
 
     while ! isempty(fcs)
         fc = pop!(fcs)
         map(ec -> remove_possible_value(ec, fc._value), ecs)
+    end
+end
+
+"""
+    update_empty_cells_using_groupings(c::T, threat_level::Int, ::ValuesUnique) where {T<:CellBag}
+
+If a pair of numbers can only be in two cells, then you can clear all other possible_values
+in those cells. extensions to 3 + are possible but should only be checked with higher threat_level.
+
+NOTE assumes that dimensions of puzzles are divisible by 3
+"""
+function update_empty_cells_using_groupings(cb::T, threat_level::Int, ::ValuesUnique) where {T<:CellBag}
+    cs = empty_cells(cb)
+
+    if length(cs) < 2
+        return
+    end
+
+    # filter combination by size based on threat level
+    combs_to_check = filter(
+        t -> 1 < length(t) < 3 * threat_level,
+        collect(combinations(get_distinct_possible_values(cs)))
+    )
+
+    for comb ∈ combs_to_check
+        #=
+        A combination of length k is a hit if all possible cells
+        for x1 ... x_k are equal.
+        =#
+        # this object is list of sets of cells that each element in comb can reside in
+        sets_target_cells = map(x -> Set(get_cells_with_possible_value(cs, x)), comb)
+        for s ∈ sets_target_cells
+            # if this comb of values can only reside in the same sets of cells, we have a hit
+            if all(c == first(s) for c ∈ s)
+                # remove all values in the target cells that are not in comb
+                for c ∈ s, pv ∈ get_possible_values(c)
+                    if pv ∉ comb
+                        remove_possible_value(c, pv)
+                    end
+                end
+            end
+        end
     end
 end
 

@@ -30,5 +30,4 @@ Benchmarks for classic sudoku solver
 - all 100 PE96 problems
 - find some tougher benchmarks
 
-Random Generator for sudoku puzzles of given type
-
+Random Generator for sudoku puzzles of given type. this can probably be handled by writing some chatgpt prompts that produce random puzzles.

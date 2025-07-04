@@ -2,12 +2,12 @@ using Test
 using sudoku
 
 @testset "Row" begin
-    r1 = Row(1, [Cell(1, 3), Cell(0, 3), Cell(2, 3)])
-    r2 = Row(2, [Cell(2, 3), Cell(3, 3), Cell(1, 3)])
-    r3 = Row(3, [Cell(1, 3), Cell(1, 3), Cell(0, 3)])
-    r4 = Row(4, [Cell(1, 4), Cell(1, 4), Cell(0, 4), Cell(0, 4)])
-    r5 = Row(5, [Cell(0, 4), Cell(3, 4), Cell(0, 4), Cell(0, 4)])
-    r6 = Row(6, [Cell(1, 4), Cell(0, 4), Cell(0, 4), Cell(0, 4)])
+    r1 = Row(1, [Cell(1, 1, 3), Cell(2, 0, 3), Cell(3, 2, 3)])
+    r2 = Row(2, [Cell(1, 2, 3), Cell(2, 3, 3), Cell(3, 1, 3)])
+    r3 = Row(3, [Cell(1, 1, 3), Cell(2, 1, 3), Cell(3, 0, 3)])
+    r4 = Row(4, [Cell(1, 1, 4), Cell(2, 1, 4), Cell(3, 0, 4), Cell(4, 0, 4)])
+    r5 = Row(5, [Cell(1, 0, 4), Cell(2, 3, 4), Cell(3, 0, 4), Cell(4, 0, 4)])
+    r6 = Row(6, [Cell(1, 1, 4), Cell(2, 0, 4), Cell(3, 0, 4), Cell(4, 0, 4)])
 
     @test iscorrect(r1)
     @test iscorrect(r2)
@@ -18,10 +18,10 @@ using sudoku
 end
 
 @testset "Cell" begin
-    c1 = Cell(1, Vector{Int}([]), 9)
-    c2 = Cell(0, Vector{Int}([3,4,5]), 9)
-    c3 = Cell(3, Vector{Int}([]), 9)
-    c4 = Cell(2, Vector{Int}([1,2]), 9)
+    c1 = Cell(1, 1, Vector{Int}([]), 9)
+    c2 = Cell(2, 0, Vector{Int}([3,4,5]), 9)
+    c3 = Cell(3, 3, Vector{Int}([]), 9)
+    c4 = Cell(4, 2, Vector{Int}([1,2]), 9)
 
     @test isempty(c2)
     @test !isempty(c1)

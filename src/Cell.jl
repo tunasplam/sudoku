@@ -3,21 +3,23 @@
 =#
 
 mutable struct Cell
+    # NOTE one day may replace with its coordinates in the Puzzle
+    id::Int
     _value::Int
     # TODO using a set may be better. also for cells in CellBag.
     _possible_values::Vector{Int}
     _max_possible_value::Int
     cellbags::Vector{WeakRef}
 
-    function Cell(value::Int, max_possible_value::Int=9)
+    function Cell(id::Int, value::Int, max_possible_value::Int=9)
         return value == 0 ?
-            new(value, collect(1:max_possible_value), max_possible_value, CellBag[]) :
-            new(value, Int[], max_possible_value, CellBag[])
+            new(id, value, collect(1:max_possible_value), max_possible_value, CellBag[]) :
+            new(id, value, Int[], max_possible_value, CellBag[])
     end
 
     # should only be used for testing and development only 
-    Cell(value::Int, possible_values::Vector{Int}, max_possible_value::Int) = 
-        new(value, possible_values, max_possible_value, CellBag[])
+    Cell(id::Int, value::Int, possible_values::Vector{Int}, max_possible_value::Int) = 
+        new(id, value, possible_values, max_possible_value, CellBag[])
 end
 
 """
@@ -72,10 +74,32 @@ function set_if_only_one_option_left(c::Cell)
     end
 end
 
+"""
+    get_distinct_possible_values(cs::Vector{Cell})::Vector{Int}
+
+Returns all distinct possible_values across multiple cells
+"""
+function get_distinct_possible_values(cs::Vector{Cell})::Vector{Int}
+    return collect(
+        foldl(union, map(l -> Set(l), [get_possible_values(c) for c ∈ cs]))
+    )
+end
+
+"""
+    get_cells_with_possible_value(cs::Vector{Cell}, x::Int)::Vector{Cell}
+
+Given a collection of cells, returns the cells which have x as a possible value
+"""
+function get_cells_with_possible_value(cs::Vector{Cell}, x::Int)::Vector{Cell}
+    return filter(c -> x ∈ get_possible_values(c), cs)
+end
+
+
 Base.isempty(c::Cell)::Bool = c._value == 0
+Base.:(==)(c1::Cell, c2::Cell) = c1.id == c2.id
 
 # this formats how printing out a cell looks in console. avoids infinite recursion
 # due to circular relationship btwn cells and cellbags
 function Base.show(io::IO, c::Cell)
-    print(io, "\n\tCell(", c._value, ", ", c._possible_values, ")")
+    print(io, "\n\tCell(id: ", c.id, " value:", c._value, " pvs: ", c._possible_values, ")")
 end

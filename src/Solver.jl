@@ -34,11 +34,11 @@ function string(s::Solver)::String
 end
 
 """
-    iscorrect(s::Solver)
+    check_correctness(s::Solver)
 
 Checks if everything is correct by validating all CellBags
 """
-function iscorrect(s::Solver)
+function check_correctness(s::Solver)
     for (k, v) in get_cellbags(s)
         if ! all(map(iscorrect, v))
             throw(InvalidPuzzleException(s, "An invalid $k was found"))
@@ -70,13 +70,10 @@ function operate_between_cellbags(
     end
 end
 
-function operate_within_cellbags(cbs_dict::Dict{Type, Vector{CellBag}})
-    for (_, cbs) ∈ cbs_dict, cb ∈ filter(! iscompleted, cbs)
+function operate_within_cellbags(cbs_dict::Dict{Type, Vector{CellBag}}, threat_level::Int)
+    for (_, cbs) ∈ cbs_dict, cb ∈ cbs
+        remove_possible_values!(cb, threat_level)
         set_if_only_one_option_left(cb)
-        # TODO if this is a unique enforced cellbag and a pair of numbers
-        # can only be in two cells, then you can clear all over possible_values
-        # in those cells. extensions to 3 + are possible (but the higher ones think about)
-        # but they should only be used if the solver is in danger of getting stuck.
     end
 end
 

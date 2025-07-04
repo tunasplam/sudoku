@@ -15,7 +15,7 @@ mutable struct Box{Cell} <: CellBag
     # things are working fine though.
     function Box(id::Int, cells::Vector{Cell})
         b = new{Cell}(id, cells)
-        remove_possible_values!(b)
+        remove_possible_values!(b, 1)
         return b
     end
 end
