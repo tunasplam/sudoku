@@ -10,7 +10,7 @@ everything that extends this needs to have these functions
     - iscorrect()
     - create_all()
     - get_cells()
-    - ↔()
+    - compare()
 
 Needs to have properites:
     - id Int
@@ -39,7 +39,7 @@ Base.eltype(::CellBag) = Cell
 Base.getindex(::CellBag, ::Int) = error("Must implement Base.getindex for CellBag")
 
 #=
-We need to be able to determine if ↔ is defined for two given CellBag subtypes,
+We need to be able to determine if compare is defined for two given CellBag subtypes,
 but we also need to distinguish between these and the fallback error types above.
 Thus, we use traits
 =#
@@ -47,16 +47,16 @@ Thus, we use traits
 struct HasCompare end
 struct MissingCompare end
 
-↔(::CellBag, ::CellBag, ::MissingCompare) = error("Must implement some sort of comparison operation (↔) for CellBag")
+compare(::CellBag, ::CellBag, ::Int, ::MissingCompare) = error("Must implement some sort of comparison operation (compare) for CellBag")
 
-# trait function: returns true is a pair of subtypes claim to support ↔
-# a trait for this CellBag subtype is that ↔ is defined for these combinations
-# override this in subtypes which do support ↔ (see def in Box for details)
+# trait function: returns true is a pair of subtypes claim to support compare
+# a trait for this CellBag subtype is that compare is defined for these combinations
+# override this in subtypes which do support compare (see def in Box for details)
 #compare_trait(::Type{A}, ::Type{B}) where {A, B} = MissingCompare()
 
-# if an invocation of ↔ is not valid, it returns false.
-# when you are defining a possible invocation ↔, use ::HasCompare
-↔(x, y, ::MissingCompare) = false
+# if an invocation of compare is not valid, it returns false.
+# when you are defining a possible invocation compare, use ::HasCompare
+compare(x, y, z, ::MissingCompare) = false
 
 function filled_cells(C::CellBag)::Vector{Cell}
     # returns a collection of cells that are filled-in either as clues or by the solver.
@@ -160,7 +160,7 @@ in those cells. extensions to 3 + are possible but should only be checked with h
 NOTE assumes that dimensions of puzzles are divisible by 3
 """
 function update_empty_cells_using_groupings(cb::T, threat_level::Int, ::ValuesUnique) where {T<:CellBag}
-    for (comb, g) in possible_value_groupings(cb, threat_level, ValuesUnique())
+    for (comb, g) ∈ possible_value_groupings(cb, threat_level, ValuesUnique())
         # remove all values in the target cells that are not in comb
         for c ∈ g, pv ∈ get_possible_values(c)
             if pv ∉ comb
@@ -206,11 +206,17 @@ function possible_value_groupings(cb::T, threat_level::Int, ::ValuesUnique)::Cha
             =#
             # this object is list of sets of cells that each element in comb can reside in
             sets_target_cells = map(x -> Set(get_cells_with_possible_value(cs, x)), comb)
-            for s ∈ sets_target_cells
-                # if this comb of values can only reside in the same sets of cells, we have a hit
-                if all(c == first(s) for c ∈ s)
-                    put!(ch, (comb, collect(s)))
-                end
+
+            if any(map(isempty, sets_target_cells))
+                continue
+            end
+
+            # if this comb of values can only reside in the same sets of cells
+            # and that set of cells has the same length of comb
+            # then we have a hits
+            fset = first(sets_target_cells)
+            if length(fset) == length(comb) && all(s == fset for s ∈ sets_target_cells)
+                put!(ch, (comb, collect(fset)))
             end
         end
     end
@@ -249,3 +255,6 @@ end
 Base.showerror(io::IO, e::InvalidInputException) = print(
     io, "InvalidInputException: ", e.msg
 )
+
+Base.:∩(A::CellBag, B::CellBag)::Vector{Cell} = get_cells(A) ∩ get_cells(B)
+\(A::CellBag, B::CellBag)::Vector{Cell} = setdiff(get_cells(A), get_cells(B))

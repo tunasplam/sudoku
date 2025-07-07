@@ -8,6 +8,8 @@ Search InvalidInputException to find assumptions that are being made about the
 puzzle that are not outlined explicitly in the ruleset.
 =#
 
+using Logging
+
 abstract type Solver end
 
 # this forces you to implement these functions in all subtypes which extend Solver
@@ -48,7 +50,7 @@ end
 """
     determine_comparable_cellbag_pairs(s::Solver)::Vector{Tuple{Type, Type}}
 
-Returns a list of pairs of CellBagTypes which can be operated on using ↔
+Returns a list of pairs of CellBagTypes which can be operated on using compare
 """
 function determine_comparable_cellbag_pairs(s::Solver)::Vector{Tuple{Type, Type}}
     cbs = get_cellbags(s)
@@ -60,22 +62,12 @@ end
 
 function operate_between_cellbags(
     comparable_cbtypes::Vector{Tuple{Type, Type}},
-    cbs::Dict{Type, Vector{CellBag}}
+    cbs::Dict{Type, Vector{CellBag}},
+    threat_level::Int
 )
     for (t1, t2) ∈ comparable_cbtypes
         for cb1 ∈ cbs[t1], cb2 ∈ cbs[t2]
-            #=
-            TODO a grouping of possible values in one cellbag can affect
-            possible values in another. We need:
-            - a generic function for identifying groupings of cells in cellbags
-                - (test with hooking up to update_empty_cells_using_groupings(::CellBag))
-            - if a grouping exists entirely in the intersection of two cellbags,
-            then all cells in the complement can have the values from the grouping
-            removed from their possible values.
-                - update_empty_cells_using_groupings(::CellBag, ::CellBag)
-            - and honestly, replace ↔ with compare
-            =#
-            ↔(cb1, cb2, HasCompare())
+            compare(cb1, cb2, threat_level, HasCompare())
         end
     end
 end
@@ -105,7 +97,7 @@ end
 """
     InvalidPuzzleException
 
-Thrown if an `iscorrect()` check finds a mistake. 
+Thrown if an `iscorrect()` check finds a mistake.
 """
 struct InvalidPuzzleException <: Exception
     s::Solver
@@ -140,3 +132,18 @@ are not mistaken for being stuck.
 Base.hash(s::Solver, h::UInt)::UInt = sum(map(
     c -> hash(c.id, h) + hash(c._value) + hash(c._possible_values), get_cells(s)
 ))
+
+"""
+    print_to_logfile(logger)
+
+Basic print out to logfile that prints out puzzle and info on each cell.
+"""
+function print_to_logfile(P::Solver)
+    logfile = open("stuck_puzzle_info.log", "w")
+    write(logfile, "Classic puzzle solver is stuck")
+    write(logfile, string(P))
+    for c in get_cells(P)
+        println(logfile, c)
+    end
+    close(logfile)
+end

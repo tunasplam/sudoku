@@ -71,21 +71,21 @@ end
     path = joinpath(@__DIR__, "resources", "pe_classic_sudoku.txt")
     puzzles = split(read(path, String), '-')
 
-    # TODO getting stuck on puzzle with this as first row:
-    # 100920000
+    # TODO getting stuck on puzzle with this as first column:
+    # 043080250
 
     #=
         stuck state:
 
-        1  5  0  0  0  4  0  0  0
-        0  2  0  5  0  1  6  0  4
-        0  4  0  0  0  2  0  1  0
-        9  0  0  0  1  7  0  0  0
-        2  1  0  0  0  0  0  3  7
-        0  7  0  8  2  0  9  6  1
-        0  0  2  1  0  0  0  9  0
-        0  0  7  0  0  9  1  4  2
-        0  9  1  2  0  0  0  5  6
+        0  6  2  9  3  4  8  0  5
+        4  0  0  0  0  1  2  0  3
+        3  0  0  0  0  0  0  0  4
+        9  4  0  0  6  2  5  0  8
+        8  2  0  0  0  0  0  0  9
+        0  5  1  4  8  9  0  0  0
+        2  0  0  0  0  0  0  0  7
+        5  0  9  7  0  0  0  0  1
+        0  0  4  0  0  3  0  5  0
     =#
     # first string is empty
     for puzzle_in in puzzles

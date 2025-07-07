@@ -88,7 +88,7 @@ function solve(P::Classic)::String
 
     while true
         operate_on_cells(P)
-        operate_between_cellbags(comparable_cbtypes, cbs)
+        operate_between_cellbags(comparable_cbtypes, cbs, threat_level)
         operate_within_cellbags(cbs, threat_level)
 
         current_p = hash(P)
@@ -99,7 +99,8 @@ function solve(P::Classic)::String
 
         if current_p == prev_p
             if threat_level == max_threat_level
-                throw(StuckPuzzleException(P, "Classic puzzle solver is stuck!"))
+                print_to_logfile(P)
+                throw(StuckPuzzleException(P, "Classic puzzle solver is stuck! See logfile for more details."))
             end
             threat_level += 1
         else
